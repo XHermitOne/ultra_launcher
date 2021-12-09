@@ -43,8 +43,8 @@ class UltraConfig(object):
         """
         Разбор конфигурационного файла.
 
-        @param cfg_filename: Полное имя конфигурационного файла.
-        @return: True/False.
+        :param cfg_filename: Полное имя конфигурационного файла.
+        :return: True/False.
         """
         if not os.path.isfile(cfg_filename):
             log_func.warning(u'Ошибка открытия файл конфигурации: <%s>' % cfg_filename)

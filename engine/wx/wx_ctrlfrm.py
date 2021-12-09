@@ -22,7 +22,7 @@ class UltraLaunchCtrlForm(ultra_launch_ctrl_dlg_proto.UltraLaunchCtrlDlgProto):
     def __init__(self, *args, **kwargs):
         """
         Конструктор.
-        @param TaskBarIcon_: Объект управления иконки трея.
+        :param TaskBarIcon_: Объект управления иконки трея.
         """
         ultra_launch_ctrl_dlg_proto.UltraLaunchCtrlDlgProto.__init__(self, *args, **kwargs)
         

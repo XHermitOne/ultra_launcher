@@ -46,7 +46,7 @@ class WxTaskBarIcon(wx.adv.TaskBarIcon):
         """
         Конструктор.
 
-        @param control_form: Форма управления.
+        :param control_form: Форма управления.
         """
         wx.adv.TaskBarIcon.__init__(self)
 
@@ -151,9 +151,9 @@ class WxTaskBarIcon(wx.adv.TaskBarIcon):
         """
         Отобразить всплывающее окно с сообщением.
 
-        @param msg: Текст сообщения.
-        @param bg_colour: Цвет фона окна.
-        @return: True/False.
+        :param msg: Текст сообщения.
+        :param bg_colour: Цвет фона окна.
+        :return: True/False.
         """
         log_func.debug(u'Отображение дополнительной информации')
         try:
@@ -186,8 +186,8 @@ class WxTaskBarIcon(wx.adv.TaskBarIcon):
         """
         Отобразить дополнительное сообщение.
 
-        @param info_filename: Полное имя файла дополнительной информации.
-        @return: True/False.
+        :param info_filename: Полное имя файла дополнительной информации.
+        :return: True/False.
         """
         if info_filename is None:
             info_filename = self.info_filename
@@ -224,7 +224,7 @@ class WxTaskBarIcon(wx.adv.TaskBarIcon):
         """
         Смена иконки.
 
-        @param image_name: Имя образа.
+        :param image_name: Имя образа.
         """
         names = ['loop', 'stop', 'run']
         name = names[self.imgidx]

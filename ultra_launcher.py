@@ -37,7 +37,7 @@ def isRunProgram():
     """
     Проверка на уже запущенный экземпляр программы.
 
-    @return: True/False.
+    :return: True/False.
     """
     out = subprocess.getoutput('ps ax | grep \'ultra_launcher.py\'')
     lines = out.split('\n')
@@ -51,7 +51,7 @@ def main(*argv):
     """
     Основная запускаемая функция.
 
-    @param argv: Параметры коммандной строки.
+    :param argv: Параметры коммандной строки.
     """
     log_func.init(config)
 

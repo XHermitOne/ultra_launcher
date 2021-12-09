@@ -72,7 +72,7 @@ class GtkTaskBarIndicator():
         """
         Смена иконки.
 
-        @param image_name: Имя образа.
+        :param image_name: Имя образа.
         """
         icon_filename = ICONS.get(image_name, ICONS['error'])
         self.indicator.set_icon(icon_filename)

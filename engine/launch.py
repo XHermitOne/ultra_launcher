@@ -50,7 +50,7 @@ def startLoop(cfg_filename=DEFAULT_CFG_FILENAME):
     """
     Запустить цикл.
 
-    @param cfg_filename: Полное имя конфигурационного файла.
+    :param cfg_filename: Полное имя конфигурационного файла.
     """
     global IS_LOOP_RUN
     IS_LOOP_RUN = True
@@ -72,7 +72,7 @@ def stopLoop():
 def isLockedFile(filename):
     """
     Проверка заблокирован ли файл на запись.
-    @param filename: Полное имя файла.
+    :param filename: Полное имя файла.
     """
     file = None
     try:
@@ -94,7 +94,7 @@ def listenLoopCfg(cfg_filenames=DEFAULT_CFG_FILENAME):
     Запуск цикла прослушки и исполнения коммандного фaйла
     согласно конфигурационному файлу.
 
-    @param cfg_filenames: Полное имя конфигурационного файла.
+    :param cfg_filenames: Полное имя конфигурационного файла.
     """
     if os.path.exists(cfg_filenames):
         cfg = config.UltraConfig()
@@ -115,8 +115,8 @@ def listenLoopCmdFile(cmd_filename, replaces=None):
     """
     Запуск цикла прослушки и исполнения коммандного фaйла.
 
-    @param cmd_filename: Полное имя коммандного файла.
-    @param replaces: Словарь автозамен.
+    :param cmd_filename: Полное имя коммандного файла.
+    :param replaces: Словарь автозамен.
     """
     log_func.info('Enter listen loop')
     while isLoopRun():
@@ -132,9 +132,9 @@ def runCommandFile(cmd_filename, replaces=None, encoding='utf-8'):
     """
     Исполнение командного файла и удаление его по завершении.
 
-    @param cmd_filename: Полное имя командного файла.
-    @param replaces: Словарь/список автозамен.
-    @param encoding: Кодовая страница коммандной строки.
+    :param cmd_filename: Полное имя командного файла.
+    :param replaces: Словарь/список автозамен.
+    :param encoding: Кодовая страница коммандной строки.
     """
     log_func.info('Run file: %s' % cmd_filename)
     if os.path.exists(cmd_filename) and os.path.getsize(cmd_filename):
@@ -194,8 +194,8 @@ def _runCommand(command, replaces=None):
     """
     Выполнение одной комманды/строки коммандного файла.
 
-    @param command: Текст комманды.
-    @param replaces: Словарь/список автозамен.
+    :param command: Текст комманды.
+    :param replaces: Словарь/список автозамен.
     """
     new_command = _autoReplace(command, replaces)
     log_func.info('Run command: %s' % new_command)
@@ -210,9 +210,9 @@ def _runCommand(command, replaces=None):
 def _autoReplace(text, replaces=None):
     """
     Произвести автозамены в тексте.
-    @param text: Текст.
-    @param replaces: Словарь/список автозамен.
-    @return: Возвращает отредактированный текст.
+    :param text: Текст.
+    :param replaces: Словарь/список автозамен.
+    :return: Возвращает отредактированный текст.
     """
     # Убрать все переводы каретки и пробелы
     text = text.strip()
@@ -251,7 +251,7 @@ def _autoReplace(text, replaces=None):
 def runCommandCfg(cfg_filename=DEFAULT_CFG_FILENAME):
     """
     Запуск на исполнение файла в соответствии с конфигурационным файлом.
-    @param cfg_filename: Полное имя конфигурационного файла.
+    :param cfg_filename: Полное имя конфигурационного файла.
     """
     if os.path.exists(cfg_filename):
         cfg = config.UltraConfig()
@@ -274,7 +274,7 @@ class UltraLaunchManager:
         """
         Конструктор.
 
-        @param task_bar: Панель задач для отображения состояния исполнения.
+        :param task_bar: Панель задач для отображения состояния исполнения.
         """
         self.task_bar = task_bar
 
@@ -293,7 +293,7 @@ class UltraLaunchManager:
         """
         Запустить цикл.
 
-        @param cfg_filename: Полное имя конфигурационного файла.
+        :param cfg_filename: Полное имя конфигурационного файла.
         """
         self.is_loop_run = True
 
@@ -313,7 +313,7 @@ class UltraLaunchManager:
         Запуск цикла прослушки и исполнения командного фaйла
         согласно конфигурационному файлу.
 
-        @param cfg_filename: Полное имя конфигурационного файла.
+        :param cfg_filename: Полное имя конфигурационного файла.
         """
         if os.path.exists(cfg_filename):
             cfg = config.UltraConfig()
@@ -335,9 +335,9 @@ class UltraLaunchManager:
         """
         Запуск цикла прослушки и исполнения командного фaйла.
 
-        @param cmd_filename: Полное имя командного файла.
-        @param replaces: Словарь автозамен.
-        @param encoding: Кодовая страница командной строки.
+        :param cmd_filename: Полное имя командного файла.
+        :param replaces: Словарь автозамен.
+        :param encoding: Кодовая страница командной строки.
         """
         log_func.info('Enter listen loop')
         while self.isLoopRun():
@@ -363,10 +363,10 @@ class UltraLaunchManager:
         """
         Запуск цикла прослушки и исполнения.
 
-        @param cmd_filename: Полное имя командного файла.
-        @param replaces: Словарь автозамен.
-        @param period_commands: Словарь периодического автозапуска команд.
-        @param encoding: Кодовая страница командной строки.
+        :param cmd_filename: Полное имя командного файла.
+        :param replaces: Словарь автозамен.
+        :param period_commands: Словарь периодического автозапуска команд.
+        :param encoding: Кодовая страница командной строки.
         """
         log_func.info('Enter listen loop')
 
@@ -402,8 +402,8 @@ class UltraLaunchManager:
         """
         Запуск исполнения команд периодического автозапуска.
 
-        @param period_commands: Словарь периодического автозапуска комманд.
-        @param replaces: Словарь автозамен.
+        :param period_commands: Словарь периодического автозапуска комманд.
+        :param replaces: Словарь автозамен.
         """
         # Прочитать текущее время
         cur_time = time.time()
@@ -430,7 +430,7 @@ class UltraLaunchManager:
         """
         Инициализация счетчиков для всех периодов.
 
-        @param period_commands: Словарь периодического автозапуска комманд.
+        :param period_commands: Словарь периодического автозапуска комманд.
         """
         self.period_counter = {}
         if period_commands:
