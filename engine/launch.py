@@ -3,21 +3,23 @@
 
 """
 Модуль содержит функции непосредственного
-исполнения комманд из файла CommandFile_.
+исполнения комманд из файла cmd_filename.
 """
 
 import os
 import os.path
+import stat
 import time
-import thread
+import threading
 
-import config
-from services.ic_std.log import log
+from .utils import config
+from .utils import log_func
+from . import global_data
 
-__version__ = (0, 0, 1, 1)
+__version__ = (0, 0, 3, 1)
 
 # Конфигурационный файл по умолчанию
-DEFAULT_CFG_FILE_NAME = os.path.join(os.path.dirname(__file__), 'default.cfg')
+DEFAULT_CFG_FILENAME = os.path.join(os.path.dirname(__file__), 'default.cfg')
 
 # Признак запущенного цикла
 IS_LOOP_RUN = False
@@ -44,15 +46,19 @@ def isLoopRun():
     return IS_LOOP_RUN
 
 
-def startLoop(CfgFileName_=DEFAULT_CFG_FILE_NAME):
+def startLoop(cfg_filename=DEFAULT_CFG_FILENAME):
     """
     Запустить цикл.
-    @param CfgFileName_: Полное имя конфигурационного файла.
+
+    @param cfg_filename: Полное имя конфигурационного файла.
     """
     global IS_LOOP_RUN
     IS_LOOP_RUN = True
 
-    thread.start_new_thread(listen_loop_cfg, (CfgFileName_,))
+    try:
+        threading.Thread(target=listenLoopCfg, args=(cfg_filename, )).start()
+    except:
+        log_func.fatal('Ошибка запуска цикла прослушивания')
 
 
 def stopLoop():
@@ -63,14 +69,15 @@ def stopLoop():
     IS_LOOP_RUN = False
 
 
-def is_locked_file(FileName_):
+def isLockedFile(filename):
     """
     Проверка заблокирован ли файл на запись.
-    @param FileName_: Полное имя файла.
+    @param filename: Полное имя файла.
     """
     file = None
     try:
-        file = os.open(FileName_, os.O_RDWR | os.O_EXCL, 0777)
+        file = os.open(filename, os.O_RDWR | os.O_EXCL,
+                       mode=stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
         result = False
     except OSError:
         time.sleep(SLEEP_LOOP_RUN)
@@ -82,82 +89,78 @@ def is_locked_file(FileName_):
     return result
 
 
-def listen_loop_cfg(CfgFileName_=DEFAULT_CFG_FILE_NAME):
+def listenLoopCfg(cfg_filenames=DEFAULT_CFG_FILENAME):
     """
     Запуск цикла прослушки и исполнения коммандного фaйла
     согласно конфигурационному файлу.
-    @param CfgFileName_: Полное имя конфигурационного файла.
+
+    @param cfg_filenames: Полное имя конфигурационного файла.
     """
-    if os.path.exists(CfgFileName_):
-        cfg = config.CConfig()
-        cfg.parseConfig(CfgFileName_)
+    if os.path.exists(cfg_filenames):
+        cfg = config.UltraConfig()
+        cfg.parseConfig(cfg_filenames)
 
         cmd_dir = os.path.dirname(cfg.cmd_filename)
         if not os.path.exists(cmd_dir):
-            log.warning('Command directory %s not found!' % cmd_dir)
+            log_func.warning('Command directory %s not found!' % cmd_dir)
             os.makedirs(cmd_dir)
-            log.info('Create directory %s' % cmd_dir)
+            log_func.info('Create directory %s' % cmd_dir)
 
-        return listen_loop_file(cfg.cmd_filename, cfg.replaces)
+        return listenLoopCmdFile(cfg.cmd_filename, cfg.replaces)
     else:
-        log.warning('Config file %s not found!' % CfgFileName_)
+        log_func.warning('Config file %s not found!' % cfg_filenames)
 
 
-def listen_loop_file(CommandFile_, Replaces_=None):
+def listenLoopCmdFile(cmd_filename, replaces=None):
     """
     Запуск цикла прослушки и исполнения коммандного фaйла.
-    @param CommandFile_: Полное имя коммандного файла.
-    @param Replaces_: Словарь автозамен.
+
+    @param cmd_filename: Полное имя коммандного файла.
+    @param replaces: Словарь автозамен.
     """
-    log.info('Enter listen loop')
+    log_func.info('Enter listen loop')
     while isLoopRun():
         time.sleep(SLEEP_LOOP_RUN)
         # Если коммандный файл существует и он не заблокирован,
         # то выполнить его
-        if os.path.exists(CommandFile_) and not is_locked_file(CommandFile_):
-            run_cmd_file(CommandFile_, Replaces_)
-    log.info('Exit listen loop')
+        if os.path.exists(cmd_filename) and not isLockedFile(cmd_filename):
+            runCommandFile(cmd_filename, replaces)
+    log_func.info('Exit listen loop')
 
 
-def run_cmd_file(CommandFile_, Replaces_=None, CP='utf-8'):
+def runCommandFile(cmd_filename, replaces=None, encoding='utf-8'):
     """
-    Исполнение коммандного файла и удаление его по завершении.
-    @param CommandFile_: Полное имя коммандного файла.
-    @param Replaces_: Словарь/список автозамен.
-    @param CP: Кодовая страница коммандной строки.
+    Исполнение командного файла и удаление его по завершении.
+
+    @param cmd_filename: Полное имя командного файла.
+    @param replaces: Словарь/список автозамен.
+    @param encoding: Кодовая страница коммандной строки.
     """
-    log.info('Run file: %s' % CommandFile_)
-    if os.path.exists(CommandFile_) and os.path.getsize(CommandFile_):
+    log_func.info('Run file: %s' % cmd_filename)
+    if os.path.exists(cmd_filename) and os.path.getsize(cmd_filename):
         cmd_file = None
         try:
-            cmd_file = open(CommandFile_, 'r')
+            cmd_file = open(cmd_filename, 'r')
             cmd_lines = cmd_file.readlines()
             # ВНИМАНИЕ! Здесь небходимо сразу закрыть и
             # удалить файл. Иначе ресурс остается заблокированным!
             cmd_file.close()
             cmd_file = None
             # Удалить файл
-            os.remove(CommandFile_)
-            log.info(u'Штатное удаление файла <%s>' % CommandFile_)
-            # Если после удаления файл все равно существует,
-            # то это ошибка
-            #while os.path.exists(CommandFile_):
-            #    log.warning(u'Коммандный файл <%s> все равно существует после чтения для обработки. Повторное удаление' % CommandFile_)
-            #    time.sleep(READ_CMD_FILE_TIMEOUT)
-            #    os.remove(CommandFile_)
-            #    time.sleep(READ_CMD_FILE_TIMEOUT)
+            os.remove(cmd_filename)
+            log_func.info(u'Штатное удаление файла <%s>' % cmd_filename)
 
-            if CP not in ('utf-8', 'utf8'):
+            if encoding not in ('utf-8', 'utf8'):
                 for i, cmd_line in enumerate(cmd_lines):
-                    cmd_lines[i] = unicode(cmd_line, CP).encode('utf-8')
+                    cmd_lines[i] = str(cmd_line)    #, encoding).encode('utf-8')
 
             try:
                 for i, cmd_line in enumerate(cmd_lines):
-                    log.info('%d. CMD line: %s' % (i, cmd_line.strip()))
+                    log_func.info('%d. CMD line: %s' % (i, cmd_line.strip()))
             except:
-                log.fatal(u'Ошибка Кодирования-Декодирования Unicode')
+                log_func.fatal(u'Ошибка Кодирования-Декодирования Unicode')
 
-            if config.REMOVE_DOUBLE_COMMANDS:
+            if global_data.getGlobal('REMOVE_DOUBLE_COMMANDS'):
                 # Убрать дублирующие команды (беруться только последние команды)
                 result_cmd_lines = list()
                 for i, cmd_line in enumerate(cmd_lines):
@@ -167,146 +170,113 @@ def run_cmd_file(CommandFile_, Replaces_=None, CP='utf-8'):
 
             for cmd_line in cmd_lines:
                 if cmd_line:
-                    _run_cmd(cmd_line, Replaces_)
+                    _runCommand(cmd_line, replaces)
 
             return True
         except:
             if cmd_file:
                 cmd_file.close()
-            log.fatal(u'Error in function run_cmd_file')
+            log_func.fatal(u'Error in function runCommandFile')
             raise
     else:
-        log.warning('Command file <%s> not correct' % CommandFile_)
+        log_func.warning('Command file <%s> not correct' % cmd_filename)
         time.sleep(READ_CMD_FILE_TIMEOUT)
         # Если файл после задержки по прежнему пуст,
         # то необходимо удалить его
-        if not os.path.getsize(CommandFile_):
-            os.remove(CommandFile_)
-            log.info(u'Удаление не корректного коммандного файла <%s>' % CommandFile_)
-
+        if not os.path.getsize(cmd_filename):
+            os.remove(cmd_filename)
+            log_func.info(u'Удаление не корректного коммандного файла <%s>' % cmd_filename)
 
     return False
 
 
-def _run_cmd(Command_, Replaces_=None):
+def _runCommand(command, replaces=None):
     """
     Выполнение одной комманды/строки коммандного файла.
-    @param Command_: Текст комманды.
-    @param Replaces_: Словарь/список автозамен.
+
+    @param command: Текст комманды.
+    @param replaces: Словарь/список автозамен.
     """
-    new_command = _auto_replace(Command_, Replaces_)
-    log.info('Run command: %s' % new_command)
+    new_command = _autoReplace(command, replaces)
+    log_func.info('Run command: %s' % new_command)
     try:
         os.system(new_command)
     except:
-        # log.error('Run: %s' % new_command)
-        log.error('Command: %s' % Command_)
+        # log_func.error('Run: %s' % new_command)
+        log_func.error('Command: %s' % command)
         raise
 
 
-def _auto_replace(Txt_, Replaces_=None):
+def _autoReplace(text, replaces=None):
     """
     Произвести автозамены в тексте.
-    @param Txt_: Текст.
-    @param Replaces_: Словарь/список автозамен.
+    @param text: Текст.
+    @param replaces: Словарь/список автозамен.
     @return: Возвращает отредактированный текст.
     """
     # Убрать все переводы каретки и пробелы
-    Txt_ = Txt_.strip()
+    text = text.strip()
     # Обязательно заменить слеши в путях
-    Txt_ = Txt_.replace('\\', '/')
+    text = text.replace('\\', '/')
     
-    if isinstance(Replaces_, dict):
+    if isinstance(replaces, dict):
         # Замены могут задаваться словарем или списком
-        replaces = Replaces_.items()
-    elif type(Replaces_) in (list, tuple):
-        replaces = Replaces_
+        replaces = replaces.items()
+    elif type(replaces) in (list, tuple):
+        replaces = replaces
     else:
-        log.warning('Auto replace. Not support replaces type <%s>' % type(Replaces_))
-        return Txt_
+        log_func.warning('Auto replace. Not support replaces type <%s>' % type(replaces))
+        return text
     
     if replaces:
         for replace_src, replace_dst in replaces:
-            if type(replace_src) == unicode:
-                replace_src = replace_src.encode('utf-8')
-            if type(replace_dst) == unicode:
-                replace_dst = replace_dst.encode('utf-8')
             try:
-                # log.debug('Text <%s> replace <%s> -> <%s>' % (Txt_, replace_src, replace_dst))
-                if replace_src in Txt_:
-                    Txt_ = Txt_.replace(replace_src, replace_dst)
+                # log_func.debug('Text <%s> replace <%s> -> <%s>' % (text, replace_src, replace_dst))
+                if replace_src in text:
+                    text = text.replace(replace_src, replace_dst)
                     # ВНИМАНИЕ! Если текст замены заканчивается на кавычку
                     # то подразумевается что весь текст, следующий за надо заменяемым
                     # необходимо обрамить этими кавычками
                     if replace_dst[-1] in ('\'', '\"'):
-                        Txt_ += replace_dst[-1]
+                        text += replace_dst[-1]
             except:
-                log.error('Replace %s to %s in text %s' % (replace_src,
-                                                           replace_dst, Txt_))
+                log_func.error('Replace %s to %s in text %s' % (replace_src,
+                                                                replace_dst, text))
                 raise
-
     # Возможно неправильное оформление параметров коммандной строки
-    Txt_ = Txt_.replace('= ', '=')
-    return Txt_
+    text = text.replace('= ', '=')
+    return text
 
 
-def run_cmd_cfg(CfgFileName_=DEFAULT_CFG_FILE_NAME):
+def runCommandCfg(cfg_filename=DEFAULT_CFG_FILENAME):
     """
     Запуск на исполнение файла в соответствии с конфигурационным файлом.
-    @param CfgFileName_: Полное имя конфигурационного файла.
+    @param cfg_filename: Полное имя конфигурационного файла.
     """
-    if os.path.exists(CfgFileName_):
-        cfg = config.CConfig()
-        cfg.parseConfig(CfgFileName_)
+    if os.path.exists(cfg_filename):
+        cfg = config.UltraConfig()
+        cfg.parseConfig(cfg_filename)
 
         if not os.path.exists(cfg.cmd_filename):
-            log.warning('Command file %s not found!' % cfg.cmd_filename)
-        return run_cmd_file(cfg.cmd_filename, cfg.replaces_list, CP=cfg.shell_encode)
+            log_func.warning('Command file %s not found!' % cfg.cmd_filename)
+        return runCommandFile(cfg.cmd_filename, cfg.replaces_list, encoding=cfg.shell_encode)
     else:
-        log.warning('Config file %s not found!' % CfgFileName_)
+        log_func.warning('Config file %s not found!' % cfg_filename)
     return False
 
-# Функции тестирования
 
-
-def test_run_cmd_file():
-    """
-    Тестирование функции run_cmd_file.
-    """
-    cmd_file_name = os.getcwd()+'/test/cmd_file.run'
-
-    log.info('START test_run_cmd_file... %s' % cmd_file_name)
-    start_time = time.time()
-    result = run_cmd_file(cmd_file_name)
-    log.info('STOP test_run_cmd_file... %s' % (time.time()-start_time))
-    log.info('Test result = %s' % result)
-
-
-def test_run_cmd_cfg():
-    """
-    Тестирование функции run_cmd_cfg.
-    """
-    cfg_file_name = os.getcwd()+'/default.cfg'
-
-    log.info('START test_run_cmd_cfg... %s' % cfg_file_name)
-    start_time = time.time()
-    result = run_cmd_cfg(cfg_file_name)
-    log.info('STOP test_run_cmd_cfg... %s' % time.time()-start_time)
-    log.info('Test result = %s' % result)
-
-# Реализация в виде класса менеджера
-
-
-class icLaunchManager:
+class UltraLaunchManager:
     """
     Менеджер управления исполнением файла.
+    Реализация в виде класса менеджера.
     """
-    def __init__(self, TaskBar_=None):
+    def __init__(self, task_bar=None):
         """
         Конструктор.
-        @param TaskBar_: Панель задач для отображения состояния исполнения.
+
+        @param task_bar: Панель задач для отображения состояния исполнения.
         """
-        self.task_bar = TaskBar_
+        self.task_bar = task_bar
 
         self.is_loop_run = False
 
@@ -319,14 +289,18 @@ class icLaunchManager:
         """
         return self.is_loop_run
 
-    def startLoop(self, CfgFileName_=DEFAULT_CFG_FILE_NAME):
+    def startLoop(self, cfg_filename=DEFAULT_CFG_FILENAME):
         """
         Запустить цикл.
-        @param CfgFileName_: Полное имя конфигурационного файла.
+
+        @param cfg_filename: Полное имя конфигурационного файла.
         """
         self.is_loop_run = True
 
-        thread.start_new_thread(self.listen_loop_cfg, (CfgFileName_,))
+        try:
+            threading.Thread(target=listenLoopCfg, args=(cfg_filename, )).start()
+        except:
+            log_func.fatal('Ошибка запуска цикла прослушивания')
 
     def stopLoop(self):
         """
@@ -334,82 +308,84 @@ class icLaunchManager:
         """
         self.is_loop_run = False
 
-    def listen_loop_cfg(self, CfgFileName_=DEFAULT_CFG_FILE_NAME):
+    def listenLoopCfg(self, cfg_filename=DEFAULT_CFG_FILENAME):
         """
-        Запуск цикла прослушки и исполнения коммандного фaйла
+        Запуск цикла прослушки и исполнения командного фaйла
         согласно конфигурационному файлу.
-        @param CfgFileName_: Полное имя конфигурационного файла.
+
+        @param cfg_filename: Полное имя конфигурационного файла.
         """
-        if os.path.exists(CfgFileName_):
-            cfg = config.CConfig()
-            cfg.parseConfig(CfgFileName_)
+        if os.path.exists(cfg_filename):
+            cfg = config.UltraConfig()
+            cfg.parseConfig(cfg_filename)
 
             cmd_dir = os.path.dirname(cfg.cmd_filename)
             if not os.path.exists(cmd_dir):
-                log.warning('Command directory %s not found!' % cmd_dir)
+                log_func.warning('Command directory %s not found!' % cmd_dir)
                 os.makedirs(cmd_dir)
-                log.info('Create directory %s' % cmd_dir)
+                log_func.info('Create directory %s' % cmd_dir)
 
-            return self.listen_loop(cfg.cmd_filename,
-                                    cfg.replaces, cfg.cmd_period,
-                                    CP=cfg.shell_encode)
+            return self.listenLoop(cfg.cmd_filename,
+                                   cfg.replaces, cfg.cmd_period,
+                                   encoding=cfg.shell_encode)
         else:
-            log.warning('Config file %s not found!' % CfgFileName_)
+            log_func.warning('Config file %s not found!' % cfg_filename)
 
-    def listen_loop_file(self, CommandFile_, Replaces_=None, CP='utf-8'):
+    def listenLoopCmdFile(self, cmd_filename, replaces=None, encoding='utf-8'):
         """
-        Запуск цикла прослушки и исполнения коммандного фaйла.
-        @param CommandFile_: Полное имя коммандного файла.
-        @param Replaces_: Словарь автозамен.
-        @param CP: Кодовая страница коммандной строки.
+        Запуск цикла прослушки и исполнения командного фaйла.
+
+        @param cmd_filename: Полное имя командного файла.
+        @param replaces: Словарь автозамен.
+        @param encoding: Кодовая страница командной строки.
         """
-        log.info('Enter listen loop')
+        log_func.info('Enter listen loop')
         while self.isLoopRun():
             time.sleep(SLEEP_LOOP_RUN)
-            # Если коммандный файл существует и он не заблокирован,
+            # Если командный файл существует и он не заблокирован,
             # то выполнить его
-            if os.path.exists(CommandFile_) and not is_locked_file(CommandFile_):
+            if os.path.exists(cmd_filename) and not isLockedFile(cmd_filename):
 
                 if self.task_bar and CAN_CHANGE_TRAY_ICONS:
                     self.task_bar.changeIcon('run')
 
                 try:
-                    run_cmd_file(CommandFile_, Replaces_, CP)
+                    runCommandFile(cmd_filename, replaces, encoding)
                 except:
-                    log.fatal(u'Ошибка выполнения коммандного файла <%s>' % CommandFile_)
+                    log_func.fatal(u'Ошибка выполнения коммандного файла <%s>' % cmd_filename)
 
                 if self.task_bar and CAN_CHANGE_TRAY_ICONS:
                     self.task_bar.changeIcon('loop')
 
-        log.info('Exit listen loop')
+        log_func.info('Exit listen loop')
 
-    def listen_loop(self, CommandFile_, Replaces_=None,
-                    PeriodCmd_=None, CP='utf-8'):
+    def listenLoop(self, cmd_filename, replaces=None, period_commands=None, encoding='utf-8'):
         """
         Запуск цикла прослушки и исполнения.
-        @param CommandFile_: Полное имя коммандного файла.
-        @param Replaces_: Словарь автозамен.
-        @param PeriodCmd_: Словарь периодического автозапуска комманд.
-        @param CP: Кодовая страница коммандной строки.
+
+        @param cmd_filename: Полное имя командного файла.
+        @param replaces: Словарь автозамен.
+        @param period_commands: Словарь периодического автозапуска команд.
+        @param encoding: Кодовая страница командной строки.
         """
-        log.info('Enter listen loop')
+        log_func.info('Enter listen loop')
 
         # Инициализировать счетчики периодов
-        self.init_period_counter(PeriodCmd_)
+        self.initPeriodCounter(period_commands)
 
         while self.isLoopRun():
             time.sleep(SLEEP_LOOP_RUN)
             # Если коммандный файл существует и он не заблокирован,
             # то выполнить его
-            if os.path.exists(CommandFile_) and not is_locked_file(CommandFile_):
+            if os.path.exists(cmd_filename) and not isLockedFile(cmd_filename):
 
                 if self.task_bar and CAN_CHANGE_TRAY_ICONS:
                     self.task_bar.changeIcon('run')
 
                 try:
-                    run_cmd_file(CommandFile_, Replaces_, CP)
+                    runCommandFile(cmd_filename, replaces, encoding)
                 except:
-                    log.fatal(u'Ошибка выполнения командного файла <%s>' % CommandFile_)
+                    log_func.fatal(u'Ошибка выполнения командного файла <%s>' % cmd_filename)
 
                 if self.task_bar and CAN_CHANGE_TRAY_ICONS:
                     self.task_bar.changeIcon('loop')
@@ -417,16 +393,17 @@ class icLaunchManager:
             else:
                 # Если не исполняется коммандный файл, то
                 # исполнять команды периодического автозапуска
-                if PeriodCmd_:
-                    self.run_period_cmd(PeriodCmd_, Replaces_)
+                if period_commands:
+                    self.runPeriodCommands(period_commands, replaces)
 
-        log.info('Exit listen loop')
+        log_func.info('Exit listen loop')
 
-    def run_period_cmd(self, PeriodCmd_=None, Replaces_=None):
+    def runPeriodCommands(self, period_commands=None, replaces=None):
         """
         Запуск исполнения команд периодического автозапуска.
-        @param PeriodCmd_: Словарь периодического автозапуска комманд.
-        @param Replaces_: Словарь автозамен.
+
+        @param period_commands: Словарь периодического автозапуска комманд.
+        @param replaces: Словарь автозамен.
         """
         # Прочитать текущее время
         cur_time = time.time()
@@ -439,31 +416,28 @@ class icLaunchManager:
                     self.task_bar.changeIcon('run')
 
                 try:
-                    for cmd in PeriodCmd_[interval]:
-                        _run_cmd(cmd, Replaces_)
+                    for cmd in period_commands[interval]:
+                        _runCommand(cmd, replaces)
                     # Сохранить значение в счетчике
                     self.period_counter[interval] = cur_time
                 except:
-                    log.fatal(u'Ошибка исполнения команд периодического автозапуска')
+                    log_func.fatal(u'Ошибка исполнения команд периодического автозапуска')
 
                 if self.task_bar and CAN_CHANGE_TRAY_ICONS:
                     self.task_bar.changeIcon('loop')
 
-    def init_period_counter(self, PeriodCmd_=None):
+    def initPeriodCounter(self, period_commands=None):
         """
         Инициализация счетчиков для всех периодов.
-        @param PeriodCmd_: Словарь периодического автозапуска комманд.
+
+        @param period_commands: Словарь периодического автозапуска комманд.
         """
         self.period_counter = {}
-        if PeriodCmd_:
+        if period_commands:
             # Сначала проверить существуют ли счетчики для всех периодов
-            for interval in PeriodCmd_.keys():
+            for interval in period_commands.keys():
                 if interval not in self.period_counter:
                     # Надо не забывать что time.time()
                     # возвращает значение в миллисекундах
                     self.period_counter[interval] = time.time()
         return self.period_counter
-
-
-if __name__ == '__main__':
-    test_run_cmd_cfg()

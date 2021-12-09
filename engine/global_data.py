@@ -10,7 +10,7 @@ import locale
 import os.path
 import datetime
 
-VERSION = (0, 0, 2, 1)
+VERSION = (0, 0, 3, 1)
 
 DEBUG_MODE = False
 LOG_MODE = False

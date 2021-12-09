@@ -23,11 +23,28 @@ Launch parameters:
 
 import sys
 import getopt
+import subprocess
 
 from engine.utils import config
 from engine.utils import log_func
 from engine.utils import global_func
 from engine import global_data
+
+__version__ = (0, 0, 3, 1)
+
+
+def isRunProgram():
+    """
+    Проверка на уже запущенный экземпляр программы.
+
+    @return: True/False.
+    """
+    out = subprocess.getoutput('ps ax | grep \'ultra_launcher.py\'')
+    lines = out.split('\n')
+    if len(lines) > 3:
+        log_func.warning(u'Программа UltraLauncher уже запущена')
+        return True
+    return False
 
 
 def main(*argv):
@@ -49,6 +66,7 @@ def main(*argv):
         log_func.printColourText(__doc__, color=log_func.GREEN_COLOR_TEXT)
         sys.exit(2)
 
+    do_start = False
     for option, arg in options:
         if option in ('-h', '--help', '-?'):
             log_func.printColourText(global_data.LOGO_TXT, color=log_func.GREEN_COLOR_TEXT)
@@ -64,14 +82,23 @@ def main(*argv):
         elif option in ('-l', '--log'):
             global_func.setLogMode()
             log_func.init()
+        elif option in ('--engine',):
+            global_func.setEngineType(arg.upper())
         elif option in ('--start', ):
             # Выбран режим автоматического запуска прослушивания
-            app = icCtrlApp(0)
-            app.start()
+            do_start = True
 
-    if not app.isRun():
-
-        app.MainLoop()
+    if not isRunProgram():
+        if global_func.isWXEngine():
+            from engine.wx import wx_app
+            app = wx_app.UltraLaunchApp()
+            if do_start:
+                app.start()
+            app.MainLoop()
+        elif global_func.isGTKEngine():
+            pass
+        else:
+            log_func.warning(u'Не определен тип движка')
     else:
         log_func.warning('Ultra Launcher already run!')
     
