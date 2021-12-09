@@ -12,8 +12,8 @@ import stat
 import time
 import threading
 
-from .utils import config
-from .utils import log_func
+from .util import config
+from .util import log_func
 from . import global_data
 
 __version__ = (0, 0, 3, 1)

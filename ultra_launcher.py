@@ -25,9 +25,9 @@ import sys
 import getopt
 import subprocess
 
-from engine.utils import config
-from engine.utils import log_func
-from engine.utils import global_func
+from engine.util import config
+from engine.util import log_func
+from engine.util import global_func
 from engine import global_data
 
 __version__ = (0, 0, 3, 1)

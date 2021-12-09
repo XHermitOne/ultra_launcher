@@ -19,7 +19,7 @@ import gi.repository.AppIndicator3
 
 from .. import global_data
 from .. import launch
-from ..utils import log_func
+from ..util import log_func
 
 __version__ = (0, 0, 0, 1)
 

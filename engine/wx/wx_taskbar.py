@@ -14,11 +14,11 @@ import os.path
 
 from .. import launch
 
-from ..utils import config
+from ..util import config
 from .. import global_data
 
-from ..utils import log_func
-from ..utils import txtfile_func
+from ..util import log_func
+from ..util import txtfile_func
 
 __version__ = (0, 0, 3, 1)
 

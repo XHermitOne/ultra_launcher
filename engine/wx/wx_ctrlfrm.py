@@ -9,7 +9,7 @@ import wx
 from . import ultra_launch_ctrl_dlg_proto
 from . import wx_taskbar
 from .. import launch
-from ..utils import log_func
+from ..util import log_func
 
 __version__ = (0, 0, 3, 1)
 
