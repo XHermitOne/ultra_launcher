@@ -73,6 +73,12 @@ DEFAULT_INFO_FILENAME = os.path.join(os.environ.get('HOME', os.path.dirname(__fi
 # Убрать из командного файла дублирующие команды?
 REMOVE_DOUBLE_COMMANDS = False
 
+ROOT_FOLDER_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+STOP_ICON_FILENAME = os.path.join(ROOT_FOLDER_PATH, 'img', 'control_stop_blue.png')
+RUN_ICON_FILENAME = os.path.join(ROOT_FOLDER_PATH, 'img', 'control_play_blue.png')
+LOOP_ICON_FILENAME = os.path.join(ROOT_FOLDER_PATH, 'img', 'control_pause_blue.png')
+ERR_ICON_FILENAME = os.path.join(ROOT_FOLDER_PATH, 'img', 'cancel.png')
+
 
 def getGlobal(name):
     """

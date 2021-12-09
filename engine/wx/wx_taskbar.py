@@ -22,11 +22,6 @@ from ..utils import txtfile_func
 
 __version__ = (0, 0, 3, 1)
 
-ROOT_FOLDER_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-STOP_ICON_FILE_NAME = os.path.join(ROOT_FOLDER_PATH, 'img',  'control_stop_blue.png')
-RUN_ICON_FILE_NAME = os.path.join(ROOT_FOLDER_PATH, 'img',  'control_play_blue.png')
-LOOP_ICON_FILE_NAME = os.path.join(ROOT_FOLDER_PATH, 'img',  'control_pause_blue.png')
-
 WIN_ICON_SIZE = (16, 16)
 GTK_ICON_SIZE = (16, 16)
 
@@ -67,9 +62,9 @@ class WxTaskBarIcon(wx.adv.TaskBarIcon):
         self.main_form = control_form
 
         # Иконки
-        loop_img = self._createIconImage(LOOP_ICON_FILE_NAME)
-        stop_img = self._createIconImage(STOP_ICON_FILE_NAME)
-        run_img = self._createIconImage(RUN_ICON_FILE_NAME)
+        loop_img = self._createIconImage(global_data.getGlobal('LOOP_ICON_FILENAME'))
+        stop_img = self._createIconImage(global_data.getGlobal('STOP_ICON_FILENAME'))
+        run_img = self._createIconImage(global_data.getGlobal('RUN_ICON_FILENAME'))
 
         self.images = {'loop': loop_img, 'stop': stop_img, 'run': run_img}
         

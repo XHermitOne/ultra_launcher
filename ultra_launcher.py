@@ -96,7 +96,11 @@ def main(*argv):
                 app.start()
             app.MainLoop()
         elif global_func.isGTKEngine():
-            pass
+            from engine.gtk import taskbar_indicator
+            indicator = taskbar_indicator.GtkTaskBarIndicator()
+            if do_start:
+                indicator.start()
+            indicator.runMainLoop()
         else:
             log_func.warning(u'Не определен тип движка')
     else:
